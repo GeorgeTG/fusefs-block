@@ -75,7 +75,7 @@ int hexify(const unsigned char *in, const size_t in_size, char *out, const size_
     return bytes_written;
 }
 
-int store_block(const block_storage* storage, const unsigned char* data, const size_t size, char* hash) {
+int store_block(const cfs_blk_store_t* storage, const unsigned char* data, const size_t size, char* hash) {
     int fd, ret;
     char path[storage->block_fname_size];
     unsigned char buff[SHA_DIGEST_LENGTH];
@@ -85,7 +85,7 @@ int store_block(const block_storage* storage, const unsigned char* data, const s
 
     combine(path, storage->blocks_path, hash);
     if (!file_exists(path)) {
-        fd = open(path, O_RDWR | O_CREAT);
+        fd = open(path, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
         if (fd == -1) {
             log_error("Cannot write block");
             return -1;
@@ -104,7 +104,7 @@ int store_block(const block_storage* storage, const unsigned char* data, const s
     return 0;
 }
 
-int load_block(const block_storage* storage, const char* hash, unsigned char* data, size_t* size) {
+int load_block(const cfs_blk_store_t* storage, const char* hash, unsigned char* data, size_t* size) {
     int fd;
     ssize_t ret;
     char path[storage->block_fname_size];
@@ -132,7 +132,7 @@ int load_block(const block_storage* storage, const char* hash, unsigned char* da
     return 0;
 }
 
-int init_storage(block_storage* storage, const char* root) {
+int init_storage(cfs_blk_store_t* storage, const char* root) {
     size_t root_len = strlen(root);
 
     // Calculate the filename size for all blocks
@@ -141,7 +141,7 @@ int init_storage(block_storage* storage, const char* root) {
     storage->blocks_path = malloc(root_len + sizeof(BLOCKS_DIRECTORY) + 1);
     storage->root_path = malloc(root_len + 1);
     if (storage->blocks_path == NULL || storage->root_path == NULL) {
-        log_error("Storage: alloc paths");
+        perror("Storage: alloc paths");
         return -1;
     }
 
@@ -149,16 +149,21 @@ int init_storage(block_storage* storage, const char* root) {
     strcpy(storage->root_path, root);
     combine(storage->blocks_path, root, BLOCKS_DIRECTORY);
 
-    printf("\n %s \n", storage->root_path);
-    printf("\n %s \n", storage->blocks_path);
+    printf("\nBlock directory is: %s\n", storage->blocks_path);
+
     /* check if the blocks directory exists, otherwise create it */
     struct stat st = {0};
     if (stat(storage->blocks_path, &st) == -1) {
         mkdir(storage->blocks_path, 0700);
-        log_msg("Creating blocks directory");
+        printf("\n Creating blocks directory \n");
     } else {
-        log_msg("Found blocks directory\n");
+        printf("\n Found blocks directory \n");
     }
 
     return 1;
+}
+
+void destroy_storage(cfs_blk_store_t* storage) {
+    free(storage->blocks_path);
+    free(storage->root_path);
 }
