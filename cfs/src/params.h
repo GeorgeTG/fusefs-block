@@ -23,9 +23,13 @@
 // maintain bbfs state in here
 #include <limits.h>
 #include <stdio.h>
+
+#include "storage.h"
+
 struct bb_state {
     FILE *logfile;
     char *rootdir;
+    block_storage* storage;
 };
 #define BB_DATA ((struct bb_state *) fuse_get_context()->private_data)
 

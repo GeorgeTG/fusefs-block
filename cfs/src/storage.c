@@ -8,72 +8,13 @@
 
 #include "storage.h"
 #include "io.h"
+#include "util.h"
 #include "log.h"
 
 #define MAGIC "st0r4g3v0.1"
 #define BLOCKS_DIRECTORY "/.BLOCKS"
 
 
-
-#if defined(WIN32)
-#  define DIR_SEPARATOR '\\'
-#else
-#  define DIR_SEPARATOR '/'
-#endif
-
-void combine(char *destination, const char *path1, const char *path2) {
-    /* Combines paths */
-    if (path1 && *path1) {
-        size_t len = strlen(path1);
-        strcpy(destination, path1);
-
-        if (destination[len - 1] == DIR_SEPARATOR) {
-            if (path2 && *path2) {
-                strcpy(destination + len, (*path2 == DIR_SEPARATOR) ? (path2 + 1) : path2);
-            }
-        }
-        else {
-            if (path2 && *path2) {
-                if (*path2 == DIR_SEPARATOR) {
-                    strcpy(destination + len, path2);
-                } else {
-                    destination[len] = DIR_SEPARATOR;
-                    strcpy(destination + len + 1, path2);
-                }
-            }
-        }
-    } else if (path2 && *path2) {
-        strcpy(destination, path2);
-    } else {
-        destination[0] = '\0';
-    }
-}
-
-int hexify(const unsigned char *in, const size_t in_size, char *out, const size_t out_size) {
-    if (in_size == 0 || out_size == 0) return 0;
-
-    char map[16+1] = "0123456789abcdef";
-
-    int bytes_written = 0;
-    size_t i = 0;
-    while(i < in_size && (i*2 + (2+1)) <= out_size)
-    {
-        uint8_t high_nibble = (in[i] & 0xF0) >> 4;
-        *out = map[high_nibble];
-        out++;
-
-        uint8_t low_nibble = in[i] & 0x0F;
-        *out = map[low_nibble];
-        out++;
-
-        i++;
-
-        bytes_written += 2;
-    }
-    *out = '\0';
-
-    return bytes_written;
-}
 
 int store_block(const cfs_blk_store_t* storage, const unsigned char* data, const size_t size, char* hash) {
     int fd, ret;

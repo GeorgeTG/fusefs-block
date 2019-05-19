@@ -99,7 +99,8 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
-am_bbfs_OBJECTS = bbfs.$(OBJEXT) log.$(OBJEXT)
+am_bbfs_OBJECTS = bbfs.$(OBJEXT) log.$(OBJEXT) storage.$(OBJEXT) \
+	io.$(OBJEXT)
 bbfs_OBJECTS = $(am_bbfs_OBJECTS)
 bbfs_LDADD = $(LDADD)
 bbfs_DEPENDENCIES =
@@ -118,7 +119,8 @@ am__v_at_1 =
 DEFAULT_INCLUDES = -I.
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__maybe_remake_depfiles = depfiles
-am__depfiles_remade = ./$(DEPDIR)/bbfs.Po ./$(DEPDIR)/log.Po
+am__depfiles_remade = ./$(DEPDIR)/bbfs.Po ./$(DEPDIR)/io.Po \
+	./$(DEPDIR)/log.Po ./$(DEPDIR)/storage.Po
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -162,12 +164,12 @@ CTAGS = ctags
 am__DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/config.h.in \
 	$(top_srcdir)/depcomp
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
-ACLOCAL = ${SHELL} /home/george/Prog/OS/lab4/fuse-tutorial-2018-02-04/missing aclocal-1.16
+ACLOCAL = ${SHELL} /home/george/Prog/OS/lab4/cfs/missing aclocal-1.16
 AMTAR = $${TAR-tar}
 AM_DEFAULT_VERBOSITY = 1
-AUTOCONF = ${SHELL} /home/george/Prog/OS/lab4/fuse-tutorial-2018-02-04/missing autoconf
-AUTOHEADER = ${SHELL} /home/george/Prog/OS/lab4/fuse-tutorial-2018-02-04/missing autoheader
-AUTOMAKE = ${SHELL} /home/george/Prog/OS/lab4/fuse-tutorial-2018-02-04/missing automake-1.16
+AUTOCONF = ${SHELL} /home/george/Prog/OS/lab4/cfs/missing autoconf
+AUTOHEADER = ${SHELL} /home/george/Prog/OS/lab4/cfs/missing autoheader
+AUTOMAKE = ${SHELL} /home/george/Prog/OS/lab4/cfs/missing automake-1.16
 AWK = mawk
 CC = gcc
 CCDEPMODE = depmode=gcc3
@@ -194,7 +196,7 @@ LDFLAGS =
 LIBOBJS = 
 LIBS = 
 LTLIBOBJS = 
-MAKEINFO = ${SHELL} /home/george/Prog/OS/lab4/fuse-tutorial-2018-02-04/missing makeinfo
+MAKEINFO = ${SHELL} /home/george/Prog/OS/lab4/cfs/missing makeinfo
 MKDIR_P = /bin/mkdir -p
 OBJEXT = o
 PACKAGE = fuse-tutorial
@@ -212,10 +214,10 @@ SET_MAKE =
 SHELL = /bin/bash
 STRIP = 
 VERSION = 2018-02-04
-abs_builddir = /home/george/Prog/OS/lab4/fuse-tutorial-2018-02-04/src
-abs_srcdir = /home/george/Prog/OS/lab4/fuse-tutorial-2018-02-04/src
-abs_top_builddir = /home/george/Prog/OS/lab4/fuse-tutorial-2018-02-04
-abs_top_srcdir = /home/george/Prog/OS/lab4/fuse-tutorial-2018-02-04
+abs_builddir = /home/george/Prog/OS/lab4/cfs/src
+abs_srcdir = /home/george/Prog/OS/lab4/cfs/src
+abs_top_builddir = /home/george/Prog/OS/lab4/cfs
+abs_top_srcdir = /home/george/Prog/OS/lab4/cfs
 ac_ct_CC = gcc
 am__include = include
 am__leading_dot = .
@@ -234,7 +236,7 @@ host_alias =
 htmldir = ${docdir}
 includedir = ${prefix}/include
 infodir = ${datarootdir}/info
-install_sh = ${SHELL} /home/george/Prog/OS/lab4/fuse-tutorial-2018-02-04/install-sh
+install_sh = ${SHELL} /home/george/Prog/OS/lab4/cfs/install-sh
 libdir = ${exec_prefix}/lib
 libexecdir = ${exec_prefix}/libexec
 localedir = ${datarootdir}/locale
@@ -255,9 +257,9 @@ target_alias =
 top_build_prefix = ../
 top_builddir = ..
 top_srcdir = ..
-bbfs_SOURCES = bbfs.c log.c log.h  params.h
+bbfs_SOURCES = bbfs.c log.c log.h  params.h storage.c storage.h io.c io.h 
 AM_CFLAGS = -D_FILE_OFFSET_BITS=64 -I/usr/include/fuse
-LDADD = -lfuse -pthread
+LDADD = -lfuse -pthread -lcrypto
 all: config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-am
 
@@ -361,7 +363,9 @@ distclean-compile:
 	-rm -f *.tab.c
 
 include ./$(DEPDIR)/bbfs.Po # am--include-marker
+include ./$(DEPDIR)/io.Po # am--include-marker
 include ./$(DEPDIR)/log.Po # am--include-marker
+include ./$(DEPDIR)/storage.Po # am--include-marker
 
 $(am__depfiles_remade):
 	@$(MKDIR_P) $(@D)
@@ -511,7 +515,9 @@ clean-am: clean-binPROGRAMS clean-generic mostlyclean-am
 
 distclean: distclean-am
 		-rm -f ./$(DEPDIR)/bbfs.Po
+	-rm -f ./$(DEPDIR)/io.Po
 	-rm -f ./$(DEPDIR)/log.Po
+	-rm -f ./$(DEPDIR)/storage.Po
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-hdr distclean-tags
@@ -558,7 +564,9 @@ installcheck-am:
 
 maintainer-clean: maintainer-clean-am
 		-rm -f ./$(DEPDIR)/bbfs.Po
+	-rm -f ./$(DEPDIR)/io.Po
 	-rm -f ./$(DEPDIR)/log.Po
+	-rm -f ./$(DEPDIR)/storage.Po
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 

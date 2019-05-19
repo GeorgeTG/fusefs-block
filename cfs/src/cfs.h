@@ -1,30 +1,31 @@
 #ifndef __CFS_H__
 #define __CFS_H__
 
-#define CFS_ROOT ".cfs"
-#define CFS_DIRECTORY "cfs_dir"
-
 #include <linux/limits.h>
 
-struct cfs_state {
-    char *root;
-    char *directory;
-};
+#include "storage.h"
 
-struct cfs_file_state {
+typedef struct {
     char path[PATH_MAX];
     off_t offset;
     size_t size;
-    size_t n_blocks;
-    int* blocks;
     int fd;
-};
+} cfs_file_state_t;
 
-struct cfs_file_block {
+typedef struct {
     long index;
     char data[4096];
     size_t size;
-};
+} cfs_file_block_t ;
+
+typedef struct {
+    char *root;
+    long max_fds;
+    cfs_blk_store_t* storage;
+    cfs_file_state_t* files;
+    long* fds;
+    size_t n_fds;
+} cfs_state_t;
 
 
 #endif
