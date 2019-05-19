@@ -1,8 +1,14 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <errno.h>
+#include <stdio.h>
 
-off_t file_seek(int fd, int offset, int whence){
+
+int file_exists(const char* path) {
+    return access(path, F_OK) != -1;
+}
+
+off_t s_lseek(int fd, int offset, int whence){
     int code = lseek(fd, ((off_t)offset), whence);
     if( code == -1 ){
         perror("lseek");
@@ -12,7 +18,7 @@ off_t file_seek(int fd, int offset, int whence){
 }
 
 ssize_t s_read(int fd, void *buf, size_t count){
-    ssize_t bytes_read;
+    ssize_t bytes_read = 0;
     ssize_t bytes_left = count;
 
     do {
@@ -24,14 +30,13 @@ ssize_t s_read(int fd, void *buf, size_t count){
                 perror("read");
                 return -1;
             }
-            return -1;
         } else {
             bytes_left -= bytes_read;
             buf += bytes_read;
         }
-     } while(bytes_left > 0);
+     } while(bytes_left > 0 && bytes_read != 0);
 
-    return bytes_read;
+    return count-bytes_left;
 }
 
 ssize_t s_write(int fd, void *buf, size_t count){
@@ -56,7 +61,4 @@ ssize_t s_write(int fd, void *buf, size_t count){
     return bytes_written;
 }
 
-void write_line(int fd, char *line, int count){
-    fileseek(fd, 0, SEEK_SET);
-    swrite(fd, line, count);
-}
+
