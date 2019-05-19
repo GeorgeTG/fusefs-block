@@ -42,7 +42,7 @@
 #endif
 
 #include "log.h"
-#include "cfs.h"
+#include "storage.h"
 
 //  All the paths I see are relative to the root of the mounted
 //  filesystem.  In order to get to the underlying filesystem, I need to
@@ -138,15 +138,16 @@ int bb_mknod(const char *path, mode_t mode, dev_t dev)
     // make a fifo, but saying it should never actually be used for
     // that.
     if (S_ISREG(mode)) {
-    retstat = log_syscall("open", open(fpath, O_CREAT | O_EXCL | O_WRONLY, mode), 0);
-    if (retstat >= 0)
-        retstat = log_syscall("close", close(retstat), 0);
-    } else
-    if (S_ISFIFO(mode))
+//        retstat = log_syscall("open", open(fpath, O_CREAT | O_EXCL | O_WRONLY, mode), 0);
+        retstat = cfs_create_file(CFS_STATE, fpath, mode);
+        if (retstat >= 0)
+            retstat = log_syscall("close", close(retstat), 0);
+    }
+    else if (S_ISFIFO(mode))
         retstat = log_syscall("mkfifo", mkfifo(fpath, mode), 0);
     else
         retstat = log_syscall("mknod", mknod(fpath, mode, dev), 0);
-    
+
     return retstat;
 }
 
@@ -304,8 +305,11 @@ int bb_open(const char *path, struct fuse_file_info *fi)
     // else it's -errno.  I'm making sure that in that case the saved
     // file descriptor is exactly -1.
     fd = log_syscall("open", open(fpath, fi->flags), 0);
-    if (fd < 0)
-    retstat = log_error("open");
+    if (fd < 0) {
+        retstat = log_error("open");
+    } else {
+//        cfs_register_file(fpath, fd, flags);
+    }
     
     fi->fh = fd;
 
@@ -915,6 +919,8 @@ int main(int argc, char *argv[])
     bb_data->logfile = log_open();
 
     // init cfs
+    bb_data->cfs_state = malloc(sizeof(cfs_state_t));
+    cfs_init(bb_data->cfs_state, bb_data->rootdir);
 
     // turn over control to fuse
     fprintf(stderr, "about to call fuse_main\n");

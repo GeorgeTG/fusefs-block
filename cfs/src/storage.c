@@ -1,4 +1,10 @@
-/* contains functions to handle block storage to disk */
+/*
+    This part of the file system is responsible for storing and loading blocks
+    based on hashes.
+
+    No info about files is handled here.
+ */
+
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <string.h>
@@ -11,7 +17,6 @@
 #include "util.h"
 #include "log.h"
 
-#define MAGIC "st0r4g3v0.1"
 #define BLOCKS_DIRECTORY "/.BLOCKS"
 
 

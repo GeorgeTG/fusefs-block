@@ -24,13 +24,15 @@
 #include <limits.h>
 #include <stdio.h>
 
-#include "storage.h"
+#include "cfs.h"
 
 struct bb_state {
     FILE *logfile;
     char *rootdir;
-    block_storage* storage;
+    cfs_state_t *cfs_state;
 };
+
 #define BB_DATA ((struct bb_state *) fuse_get_context()->private_data)
+#define CFS_STATE (BB_DATA->cfs_state)
 
 #endif

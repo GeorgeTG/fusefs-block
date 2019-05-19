@@ -100,7 +100,7 @@ CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
 am_bbfs_OBJECTS = bbfs.$(OBJEXT) log.$(OBJEXT) storage.$(OBJEXT) \
-	io.$(OBJEXT)
+	io.$(OBJEXT) util.$(OBJEXT) cfs.$(OBJEXT)
 bbfs_OBJECTS = $(am_bbfs_OBJECTS)
 bbfs_LDADD = $(LDADD)
 bbfs_DEPENDENCIES =
@@ -119,8 +119,9 @@ am__v_at_1 =
 DEFAULT_INCLUDES = -I.
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__maybe_remake_depfiles = depfiles
-am__depfiles_remade = ./$(DEPDIR)/bbfs.Po ./$(DEPDIR)/io.Po \
-	./$(DEPDIR)/log.Po ./$(DEPDIR)/storage.Po
+am__depfiles_remade = ./$(DEPDIR)/bbfs.Po ./$(DEPDIR)/cfs.Po \
+	./$(DEPDIR)/io.Po ./$(DEPDIR)/log.Po ./$(DEPDIR)/storage.Po \
+	./$(DEPDIR)/util.Po
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -257,7 +258,7 @@ target_alias =
 top_build_prefix = ../
 top_builddir = ..
 top_srcdir = ..
-bbfs_SOURCES = bbfs.c log.c log.h  params.h storage.c storage.h io.c io.h 
+bbfs_SOURCES = bbfs.c log.c log.h  params.h storage.c storage.h io.c io.h util.c util.h cfs.h cfs.c
 AM_CFLAGS = -D_FILE_OFFSET_BITS=64 -I/usr/include/fuse
 LDADD = -lfuse -pthread -lcrypto
 all: config.h
@@ -363,9 +364,11 @@ distclean-compile:
 	-rm -f *.tab.c
 
 include ./$(DEPDIR)/bbfs.Po # am--include-marker
+include ./$(DEPDIR)/cfs.Po # am--include-marker
 include ./$(DEPDIR)/io.Po # am--include-marker
 include ./$(DEPDIR)/log.Po # am--include-marker
 include ./$(DEPDIR)/storage.Po # am--include-marker
+include ./$(DEPDIR)/util.Po # am--include-marker
 
 $(am__depfiles_remade):
 	@$(MKDIR_P) $(@D)
@@ -515,9 +518,11 @@ clean-am: clean-binPROGRAMS clean-generic mostlyclean-am
 
 distclean: distclean-am
 		-rm -f ./$(DEPDIR)/bbfs.Po
+	-rm -f ./$(DEPDIR)/cfs.Po
 	-rm -f ./$(DEPDIR)/io.Po
 	-rm -f ./$(DEPDIR)/log.Po
 	-rm -f ./$(DEPDIR)/storage.Po
+	-rm -f ./$(DEPDIR)/util.Po
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-hdr distclean-tags
@@ -564,9 +569,11 @@ installcheck-am:
 
 maintainer-clean: maintainer-clean-am
 		-rm -f ./$(DEPDIR)/bbfs.Po
+	-rm -f ./$(DEPDIR)/cfs.Po
 	-rm -f ./$(DEPDIR)/io.Po
 	-rm -f ./$(DEPDIR)/log.Po
 	-rm -f ./$(DEPDIR)/storage.Po
+	-rm -f ./$(DEPDIR)/util.Po
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 
