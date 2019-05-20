@@ -308,7 +308,7 @@ int bb_open(const char *path, struct fuse_file_info *fi)
     if (fd < 0) {
         retstat = log_error("open");
     } else {
-//        cfs_register_file(fpath, fd, flags);
+        cfs_register_file(fpath, fd, fi->flags);
     }
     
     fi->fh = fd;

@@ -8,12 +8,20 @@ int file_exists(const char* path) {
     return access(path, F_OK) != -1;
 }
 
-off_t s_lseek(int fd, int offset, int whence){
-    int code = lseek(fd, ((off_t)offset), whence);
-    if( code == -1 ){
-        perror("lseek");
-        return -1;
-    }
+off_t s_lseek(int fd, off_t offset, int whence){
+    int code;
+    do {
+        code = lseek(fd, offset, whence);
+        if( code == -1 ){
+            if (errno == EINTR) {
+                continue;
+            }
+            perror("lseek");
+        } else {
+            return code;
+        }
+    } while (1);
+
     return code;
 }
 

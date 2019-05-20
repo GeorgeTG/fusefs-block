@@ -10,8 +10,6 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include <openssl/sha.h>
-
 #include "storage.h"
 #include "io.h"
 #include "util.h"
@@ -19,17 +17,51 @@
 
 #define BLOCKS_DIRECTORY "/.BLOCKS"
 
+ssize_t block_get_size( const cfs_blk_store_t* storage, const unsigned char* hash) {
+    int fd;
+    ssize_t ret;
+    char path[storage->block_fname_size];
+    char buff[HASH_LENGTH * 2 + 1];
 
+    // convert hash to readable hex string
+    hexify(hash, HASH_LENGTH, buff, HASH_LENGTH * 2);
 
-int store_block(const cfs_blk_store_t* storage, const unsigned char* data, const size_t size, char* hash) {
+    // create fullpath and open block file
+    combine(path, storage->blocks_path, buff);
+    fd = open(path, O_RDONLY);
+    if (fd == -1) {
+        log_error("Cannot open block");
+        return -1;
+    }
+
+    s_lseek(fd, 0, SEEK_SET);
+    ret = s_lseek(fd, 0, SEEK_END);
+    close(fd);
+
+    return ret;
+}
+
+int block_exists( const cfs_blk_store_t* storage, const unsigned char* hash) {
+    char path[storage->block_fname_size];
+    char buff[HASH_LENGTH * 2 + 1];
+    
+    // convert hash to readable hex string
+    hexify(hash, HASH_LENGTH, buff, HASH_LENGTH * 2);
+    combine(path, storage->blocks_path, buff);
+
+    return file_exists(path);
+}
+
+int store_block(const cfs_blk_store_t* storage, const unsigned char* data, const size_t size, unsigned char* hash) {
     int fd, ret;
     char path[storage->block_fname_size];
-    unsigned char buff[SHA_DIGEST_LENGTH];
+    char buff[HASH_LENGTH * 2 + 1];
 
-    SHA1(data, size, buff);
-    hexify(buff, SHA_DIGEST_LENGTH, hash, SHA_DIGEST_LENGTH * 2);
+    // convert hash to readable hex string
+    hexify(hash, HASH_LENGTH, buff, HASH_LENGTH * 2);
 
-    combine(path, storage->blocks_path, hash);
+    // Create the file path and save the block
+    combine(path, storage->blocks_path, buff);
     if (!file_exists(path)) {
         fd = open(path, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
         if (fd == -1) {
@@ -50,12 +82,16 @@ int store_block(const cfs_blk_store_t* storage, const unsigned char* data, const
     return 0;
 }
 
-int load_block(const cfs_blk_store_t* storage, const char* hash, unsigned char* data, size_t* size) {
+int load_block(const cfs_blk_store_t* storage, const unsigned char* hash, unsigned char* data, size_t* size) {
     int fd;
     ssize_t ret;
     char path[storage->block_fname_size];
+    char buff[HASH_LENGTH * 2 + 1];
 
-    combine(path, storage->blocks_path, hash);
+    // convert hash to readable hex string
+    hexify(hash, HASH_LENGTH, buff, HASH_LENGTH * 2);
+
+    combine(path, storage->blocks_path, buff);
     if (file_exists(path)) {
         fd = open(path, O_RDONLY);
         if (fd == -1) {

@@ -40,7 +40,7 @@ int cfs_init(cfs_state_t *state, const char* rootdir) {
     init_storage(state->storage, rootdir);
 
     /* init file state map */
-    state->files = malloc(sizeof(cfs_file_state_t) * FDS_STORE_INITIAL);
+    state->files = malloc(sizeof(cfs_file_t) * FDS_STORE_INITIAL);
     state->fds = malloc(sizeof(int) * FDS_STORE_INITIAL);
     state->fds_cap = FDS_STORE_INITIAL;
     state->n_fds = 0;
@@ -54,14 +54,16 @@ int cfs_destroy(cfs_state_t* state) {
     destroy_storage(state->storage);
 }
 
-int cfs_register_file(cfs_state_t* state, const char* path, const int fd, const int flags) {
-    int i = 0;
+
+int cfs_register_file(cfs_state_t* state, const char* path, const int fd) {
+    int i = 0, ret;
+    off_t buff;
 
     if (state->n_fds >= state->fds_cap /2) {
         /* make the state map bigger*/
         i = state->fds_cap; /* store old upper bound, to init the new memory */
         state->fds_cap = state->fds_cap * 2;
-        state->files = realloc(state->files, sizeof(cfs_file_state_t) * state->fds_cap);
+        state->files = realloc(state->files, sizeof(cfs_file_t) * state->fds_cap);
         state->fds = realloc(state->fds, sizeof(int) * state->fds_cap);
         for (; i<state->fds_cap; i++) {
             state->fds[i] = -1;
@@ -74,8 +76,27 @@ int cfs_register_file(cfs_state_t* state, const char* path, const int fd, const 
             state->fds[i] = fd;
             state->files[i].offset = 0;
             strcpy(state->files[i].path, path);
+
+            log_msg("\n CFS: registered file[FD: %d]: %s at index: %d \n", fd, path, i);
+
+            /* read size and blocks */
+            ret = s_lseek(fd, sizeof(MAGIC), SEEK_SET);
+            ret |= s_read(fd, (void*)&(state->files[i].size), sizeof(off_t));
+            ret |= s_read(fd, (void*)&(state->files[i].total_blocks), sizeof(off_t));
+            if (ret < 0 ) {
+                log_error("CFS: Register file");
+                return ret;
+            } else {
+                log_msg("\n CFS: File [FD: %d]: %s is %lld bytes, %lld blocks \n",
+                    fd, path,
+                    state->files[i].size,
+                    state->files[i].total_blocks);
+    
+                return fd;
+            }
         }
     }
+
     return -1; 
 }
 
@@ -103,7 +124,7 @@ int cfs_create_file(cfs_state_t* state, const char* path, mode_t mode) {
 /*
     Get a file state by file descriptor
 */
-cfs_file_state_t* cfs_get_file_state(cfs_state_t* state, int fd) {
+cfs_file_t* cfs_get_file(cfs_state_t* state, int fd) {
     int i;
     for (i=0; i<state->fds_cap; i++) {
         if (state->fds[i] == fd) {
@@ -114,8 +135,95 @@ cfs_file_state_t* cfs_get_file_state(cfs_state_t* state, int fd) {
     return NULL;
 }
 
-int cfs_file_register_block(cfs_state_t* state, cfs_file_state_t* file) {
+int cfs_file_find_index(const cfs_state_t* state, cfs_file_t* file, const off_t index) {
+    int ret;
+    unsigned char hash [HASH_LENGTH];
+    ssize_t block_size;
+    ssize_t bytes_read;
+    off_t index_buff;
 
+    // start from the beginning
+    s_lseek(file->fd, BLOCK_START, SEEK_SET);
+
+    // find the index-hash pair in the file
+    do {
+        bytes_read = s_read(file->fd, (void*)&index_buff, sizeof(off_t));
+        if (bytes_read == 0) {
+            return 0;
+        }else if (index_buff == index) {
+            return 1;
+        } else {
+            // skip this hash
+            s_lseek(file->fd, HASH_LENGTH, SEEK_CUR);
+        }
+    } while(1);
+
+    return 0;
+}
+
+int cfs_file_register_block(const cfs_state_t* state, cfs_file_t* file, const cfs_block_t* block) {
+    int ret;
+    unsigned char hash [HASH_LENGTH];
+    ssize_t old_size=0, bytes_read;
+
+    calculate_hash(block->data, block->size, hash);
+    // try to store the block, 
+    ret = store_block(state->storage, block->data, block->size, hash);
+    if (ret != 0) {
+        log_error("CFS: Cant store block!");
+        return ret;
+    }
+
+    // check if we have a different block at this index
+    ret = cfs_file_find_index(state, file, block->index);
+    if (ret) {
+        log_msg("CFS: other block found at index: %lld\n", block->index);
+        /* block at this index already exists, find the old block's size*/
+        ret = s_read(file->fd, (void*)hash, HASH_LENGTH);
+        old_size = block_get_size(state->storage, hash);
+
+        // replace the block hash at this index 
+        s_lseek(file->fd, -HASH_LENGTH, SEEK_CUR); 
+        s_write(file->fd, (void*)hash, HASH_LENGTH);
+    } else {
+        // append pair to the end of the file
+        s_lseek(file->fd, 0, SEEK_END);
+        s_write(file->fd, (void*)&(block->index), sizeof(block->index));
+        s_write(file->fd, (void*)hash, HASH_LENGTH);
+    }
+    // update file size
+    file->size = file->size - old_size + block->size;
+    s_lseek(file->fd, SIZE_START, SEEK_SET);
+    s_write(file->fd, (void*)&(file->size), sizeof(file->size));
+
+    return 0;
+}
+
+int cfs_file_read_block(const cfs_state_t* state, cfs_file_t* file, const off_t index, cfs_block_t* buff) {
+    int ret;
+    unsigned char hash [HASH_LENGTH];
+    ssize_t block_size;
+    ssize_t bytes_read;
+    off_t index_buff;
+
+    // start from the beginning
+    s_lseek(file->fd, BLOCK_START, SEEK_SET);
+
+    // find the index-hash pair in the file
+    ret = cfs_file_find_index(state, file, index);
+    if (!ret) {
+        return 0;
+    }
+    bytes_read = s_read(file->fd, (void*)hash, HASH_LENGTH);
+
+
+    ret = load_block(state->storage, hash, buff->data, &buff->size);
+    if (ret != 0) {
+        log_error("CFS: Cant read block!");
+        return ret;
+    }
+
+    return 1;
 }
 
 

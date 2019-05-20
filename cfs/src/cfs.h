@@ -3,6 +3,7 @@
 
 #include <linux/limits.h>
 #include <sys/stat.h>
+#include <openssl/sha.h>
 
 #include "storage.h"
 
@@ -11,6 +12,7 @@
 #define MAGIC "CFS0.1"
 #define SIZE_START sizeof(MAGIC)
 #define BLOCK_START sizeof(off_t) * 2 + sizeof(MAGIC)
+#define BLOCK_PAIR sizeof(off_t) + SHA_DIGEST_LENGTH
 
 typedef struct {
     char path[PATH_MAX];
@@ -18,13 +20,13 @@ typedef struct {
     off_t size;
     off_t total_blocks;
     int fd;
-} cfs_file_state_t;
+} cfs_file_t;
 
 typedef struct {
-    long index;
-    char data[4096];
+    off_t index;
     size_t size;
-} cfs_file_block_t ;
+    char data[4096];
+} cfs_block_t ;
 
 typedef struct {
     char *root;
@@ -32,7 +34,7 @@ typedef struct {
     cfs_blk_store_t* storage;
 
     /* file state */
-    cfs_file_state_t* files;
+    cfs_file_t* files;
     int* fds;
     size_t n_fds;
     size_t fds_cap; /* current size of dynamic array */
@@ -41,7 +43,8 @@ typedef struct {
 
 int cfs_init(cfs_state_t *state, const char* rootdir);
 int cfs_destroy(cfs_state_t* state);
-cfs_file_state_t* cfs_get_file_state(cfs_state_t* state, int fd);
+cfs_file_t* cfs_get_file_state(cfs_state_t* state, int fd);
 int cfs_create_file(cfs_state_t* state, const char* path, mode_t mode);
+int cfs_register_file(cfs_state_t* state, const char* path, const int fd);
 
 #endif
