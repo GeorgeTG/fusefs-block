@@ -75,13 +75,18 @@ int bb_getattr(const char *path, struct stat *statbuf)
 {
     int retstat;
     char fpath[PATH_MAX];
-    
+    cfs_file_t file;
+
     log_msg("\nbb_getattr(path=\"%s\", statbuf=0x%08x)\n",
       path, statbuf);
     bb_fullpath(fpath, path);
 
-    retstat = log_syscall("lstat", lstat(fpath, statbuf), 0);
-    
+    retstat |= log_syscall("lstat", lstat(fpath, statbuf), 0);
+    retstat = cfs_file_stat(CFS_STATE, fpath, &file);
+    statbuf->st_size = file.size;
+    statbuf->st_blksize = BLOCK_SIZE;
+    statbuf->st_blocks = file.total_blocks;
+
     log_stat(statbuf);
     
     return retstat;
@@ -337,14 +342,52 @@ int bb_open(const char *path, struct fuse_file_info *fi)
 // returned by read.
 int bb_read(const char *path, char *buf, size_t size, off_t offset, struct fuse_file_info *fi)
 {
-    int retstat = 0;
-    
+    cfs_file_t* file;
+    cfs_block_t blk_buf;
+    off_t current_offset = offset;
+    int buffer_index=0;
+
+    int rem;
+    int left, right; // helper indexes to copy from read block
+
+   
     log_msg("\nbb_read(path=\"%s\", buf=0x%08x, size=%d, offset=%lld, fi=0x%08x)\n",
         path, buf, size, offset, fi);
     // no need to get fpath on this one, since I work from fi->fh not the path
     log_fi(fi);
 
-    return log_syscall("pread", pread(fi->fh, buf, size, offset), 0);
+    file = cfs_get_file(CFS_STATE, fi->fh);
+    if (file == NULL) {
+        log_msg("\nCFS: Cannot find file %s to write\n", path);
+        return -1;
+    }
+
+    while (current_offset < offset + size) {
+        blk_buf.index = 0;
+        blk_buf.size = 0;
+        memset(&blk_buf.data, '\0', sizeof(blk_buf.data));
+
+        rem = current_offset % BLOCK_SIZE;
+
+        // read curent block 
+        cfs_file_read_block(CFS_STATE, file, current_offset / BLOCK_SIZE, &blk_buf);
+        // Set up index pointers
+        left = rem;
+        right = min(blk_buf.size - left, 0); // be aware of holes i.e incomplete blocks
+    
+        memcpy(buf + buffer_index, blk_buf.data + left, max(right-left, 0));
+
+        log_msg("\n CFS: read block: left %d, right %d, size: %zu, crnt_off: %d, blk_idx: %d, buff_idx: %d\n",
+            left, right, blk_buf.size, current_offset, blk_buf.index, buffer_index);        
+        
+        // Advance current offset to next block, again beware of holes
+        current_offset += BLOCK_SIZE - rem;
+
+        // advance input buffer
+        buffer_index += BLOCK_SIZE - rem;
+    }
+    return size;
+    //return log_syscall("pread", pread(fi->fh, buf, size, offset), 0);
 }
 
 /** Write data to an open file
