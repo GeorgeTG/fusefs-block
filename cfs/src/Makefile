@@ -265,7 +265,7 @@ top_srcdir = ..
 bbfs_SOURCES = bbfs.c log.c log.h  params.h storage.c storage.h io.c io.h util.c util.h cfs.h cfs.c
 cfscat_SOURCES = cfscat.c fakelog.c log.h  storage.c storage.h io.c io.h util.c util.h cfs.h cfs.c
 AM_CFLAGS = -I/usr/include/fuse -D_FILE_OFFSET_BITS=64 
-LDADD = -lfuse -pthread  -lcrypto
+LDADD = -lfuse -pthread  -lcrypto -lpthread
 all: config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-am
 

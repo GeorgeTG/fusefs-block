@@ -4,6 +4,7 @@
 #include <linux/limits.h>
 #include <sys/stat.h>
 #include <openssl/sha.h>
+#include <pthread.h>
 
 #include "storage.h"
 
@@ -40,6 +41,8 @@ typedef struct {
     size_t n_fds;
     size_t fds_cap; /* current size of dynamic array */
     /* ----------- */
+
+    pthread_mutex_t lock;
 } cfs_state_t;
 
 int cfs_init(cfs_state_t *state, const char* rootdir);
@@ -49,7 +52,7 @@ int cfs_file_stat(cfs_state_t* state, const char* path, cfs_file_t* stat_buf);
 int cfs_create_file(cfs_state_t* state, const char* path, mode_t mode);
 int cfs_register_file(cfs_state_t* state, const char* path, const int fd);
 int cfs_release_file(cfs_state_t* state, const int fd);
-int cfs_file_read_block(const cfs_state_t* state, cfs_file_t* file, const off_t index, cfs_block_t* buff);
-int cfs_file_register_block(const cfs_state_t* state, cfs_file_t* file, const cfs_block_t* block);
+int cfs_file_read_block(cfs_state_t* state, cfs_file_t* file, const off_t index, cfs_block_t* buff);
+int cfs_file_register_block(cfs_state_t* state, cfs_file_t* file, const cfs_block_t* block);
 
 #endif

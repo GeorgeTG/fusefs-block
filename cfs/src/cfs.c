@@ -18,6 +18,7 @@ off_t block_index - (20) hash  X total_blocks times
 #include <unistd.h>
 #include <string.h>
 #include <linux/limits.h>
+#include <pthread.h>
 
 #include <fuse.h>
 
@@ -33,6 +34,9 @@ off_t block_index - (20) hash  X total_blocks times
 */
 int cfs_init(cfs_state_t *state, const char* rootdir) {
     int i;
+
+    pthread_mutex_init(&state->lock, NULL);
+
     /* get the maximum number of file descriptors the systems is configured to have */
     state->max_fds = sysconf(_SC_OPEN_MAX);
     if (state->max_fds < 0) {
@@ -59,6 +63,7 @@ int cfs_init(cfs_state_t *state, const char* rootdir) {
 */
 int cfs_destroy(cfs_state_t* state)
 {
+    pthread_mutex_destroy(&state->lock);
     free(state->files);
     free(state->fds);
     destroy_storage(state->storage);
@@ -116,6 +121,8 @@ int cfs_register_file(cfs_state_t* state, const char* path, const int fd) {
     int i = 0, ret;
     off_t buff;
 
+    pthread_mutex_lock(&state->lock);
+
     if (state->n_fds >= state->fds_cap /2) {
         /* make the state map bigger*/
         i = state->fds_cap - 1; /* store old upper bound, to init the new memory */
@@ -144,6 +151,7 @@ int cfs_register_file(cfs_state_t* state, const char* path, const int fd) {
             ret |= s_read(fd, (void*)&(state->files[i].total_blocks), sizeof(off_t));
             if (ret < 0 ) {
                 log_error("CFS: Register file");
+                pthread_mutex_unlock(&state->lock);
                 return ret;
             } else {
                 log_msg("\n CFS: File [FD: %d]: %s is %lld bytes, %lld blocks \n",
@@ -151,11 +159,13 @@ int cfs_register_file(cfs_state_t* state, const char* path, const int fd) {
                     state->files[i].size,
                     state->files[i].total_blocks);
     
+                pthread_mutex_unlock(&state->lock);
                 return fd;
             }
         }
     }
 
+    pthread_mutex_unlock(&state->lock);
     return -1; 
 }
 
@@ -165,15 +175,19 @@ int cfs_register_file(cfs_state_t* state, const char* path, const int fd) {
 */
 int cfs_release_file(cfs_state_t* state, const int fd) {
     int i;
+    
+    pthread_mutex_lock(&state->lock);
     for (i=0; i<state->fds_cap; i++) {
         if (state->fds[i] == fd) {
             log_msg("\n CFS: Released file %d at [%d] -> *%p\n", fd, i, &state->files[i]);
             state->fds[i] = -1;
             state->n_fds--;
+            pthread_mutex_unlock(&state->lock);
             return 0;
         }
     }
 
+    pthread_mutex_unlock(&state->lock);
     return -1;
 }
 
@@ -262,17 +276,22 @@ int cfs_file_find_index(const cfs_state_t* state, cfs_file_t* file, const off_t 
     Register a *block* to *file*.
     Block is saved in block storage, if it doesn't already exist. 
 */
-int cfs_file_register_block(const cfs_state_t* state, cfs_file_t* file, const cfs_block_t* block)
+int cfs_file_register_block(cfs_state_t* state, cfs_file_t* file, const cfs_block_t* block)
 {
     int ret;
     unsigned char hash [HASH_LENGTH];
     ssize_t old_size=0, bytes_read;
 
     calculate_hash(block->data, block->size, hash);
+   
+    pthread_mutex_lock(&state->lock);
+   
     // try to store the block, 
     ret = store_block(state->storage, block->data, block->size, hash);
     if (ret < 0) {
+        pthread_mutex_unlock(&state->lock);
         log_error("CFS: Cant store block!");
+        pthread_mutex_unlock(&state->lock);
         return ret;
     }
 
@@ -302,6 +321,8 @@ int cfs_file_register_block(const cfs_state_t* state, cfs_file_t* file, const cf
     s_write(file->fd, (void*)&(file->size), sizeof(file->size));
     s_write(file->fd, (void*)&(file->total_blocks), sizeof(file->total_blocks));
 
+    pthread_mutex_unlock(&state->lock);
+
     return 0;
 }
 
@@ -310,7 +331,7 @@ int cfs_file_register_block(const cfs_state_t* state, cfs_file_t* file, const cf
     Read a block from file
     Index is the block index, not to be confused with file offset
 */
-int cfs_file_read_block(const cfs_state_t* state, cfs_file_t* file, const off_t index, cfs_block_t* buff)
+int cfs_file_read_block(cfs_state_t* state, cfs_file_t* file, const off_t index, cfs_block_t* buff)
 {
     int ret;
     unsigned char hash [HASH_LENGTH];
@@ -318,12 +339,14 @@ int cfs_file_read_block(const cfs_state_t* state, cfs_file_t* file, const off_t 
     ssize_t bytes_read;
     off_t index_buff;
 
+    pthread_mutex_lock(&state->lock);
     // start from the beginning
     s_lseek(file->fd, BLOCK_START, SEEK_SET);
 
     // find the index-hash pair in the file
     ret = cfs_file_find_index(state, file, index);
     if (!ret) {
+        pthread_mutex_unlock(&state->lock);
         return 0;
     }
     bytes_read = s_read(file->fd, (void*)hash, HASH_LENGTH);
@@ -332,9 +355,11 @@ int cfs_file_read_block(const cfs_state_t* state, cfs_file_t* file, const off_t 
     ret = load_block(state->storage, hash, buff->data, &buff->size);
     if (ret != 0) {
         log_error("CFS: Cant read block!");
+        pthread_mutex_unlock(&state->lock);
         return ret;
     }
 
     buff->index = index;
+    pthread_mutex_unlock(&state->lock);
     return 1;
 }
