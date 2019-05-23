@@ -43,6 +43,7 @@
 
 #include "log.h"
 #include "storage.h"
+#include "util.h"
 
 //  All the paths I see are relative to the root of the mounted
 //  filesystem.  In order to get to the underlying filesystem, I need to
@@ -304,11 +305,11 @@ int bb_open(const char *path, struct fuse_file_info *fi)
     // if the open call succeeds, my retstat is the file descriptor,
     // else it's -errno.  I'm making sure that in that case the saved
     // file descriptor is exactly -1.
-    fd = log_syscall("open", open(fpath, fi->flags), 0);
+    fd = log_syscall("open", open(fpath, O_RDWR), 0);
     if (fd < 0) {
         retstat = log_error("open");
     } else {
-        cfs_register_file(fpath, fd, fi->flags);
+        cfs_register_file(CFS_STATE, fpath, fd);
     }
     
     fi->fh = fd;
@@ -359,15 +360,53 @@ int bb_read(const char *path, char *buf, size_t size, off_t offset, struct fuse_
 int bb_write(const char *path, const char *buf, size_t size, off_t offset,
          struct fuse_file_info *fi)
 {
-    int retstat = 0;
-    
+    cfs_file_t* file;
+    cfs_block_t blk_buf;
+    off_t current_offset = offset;
+    int buffer_index=0;
+
+    int rem;
+    int left, right; // helper indexes to copy from read block
+
     log_msg("\nbb_write(path=\"%s\", buf=0x%08x, size=%d, offset=%lld, fi=0x%08x)\n",
         path, buf, size, offset, fi
         );
     // no need to get fpath on this one, since I work from fi->fh not the path
     log_fi(fi);
 
-    return log_syscall("pwrite", pwrite(fi->fh, buf, size, offset), 0);
+    file = cfs_get_file(CFS_STATE, fi->fh);
+    if (file == NULL) {
+        log_msg("\nCFS: Cannot find file %s to write\n", path);
+        return -1;
+    }
+
+    while (current_offset < offset + size) {
+        memset(&blk_buf, 0, sizeof(blk_buf));
+        rem = current_offset % BLOCK_SIZE;
+        if (rem) {
+            // We are in the middle of a block, try to read the old one first
+            cfs_file_read_block(CFS_STATE, file, current_offset / BLOCK_SIZE, &blk_buf);
+        }
+        // Set up index pointers
+        left = rem;
+        right = min(BLOCK_SIZE - rem, offset + size - current_offset);
+        // copy data to write in block buffer
+        memcpy(blk_buf.data + left, buf + buffer_index, right-left);
+
+        // Set up and write block
+        blk_buf.size = right-left;
+        blk_buf.index = current_offset / BLOCK_SIZE;
+        cfs_file_register_block(CFS_STATE, file, &blk_buf);
+        log_msg("\n CFS: write block: left %d, right %d, size: %zu, crnt_off: %d, blk_idx: %d, buff_idx: %d\n",
+            left, right, blk_buf.size, current_offset, blk_buf.index, buffer_index);        
+        // Advance current offset
+        current_offset += blk_buf.size;
+
+        // advance input buffer
+        buffer_index += right - left;
+    }    
+//    return log_syscall("pwrite", pwrite(fi->fh, buf, size, offset), 0);
+    return size;
 }
 
 /** Get file system statistics

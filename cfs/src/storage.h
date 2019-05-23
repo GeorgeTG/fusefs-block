@@ -10,6 +10,8 @@ typedef struct {
 } cfs_blk_store_t;
 
 
+#define BLOCK_SIZE 4096
+
 int init_storage(cfs_blk_store_t* storage, const char* root);
 void destroy_storage(cfs_blk_store_t* storage);
 int store_block(const cfs_blk_store_t* storage, const unsigned char* data, const size_t size, unsigned char* hash);

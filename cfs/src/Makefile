@@ -86,7 +86,7 @@ POST_INSTALL = :
 NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
-bin_PROGRAMS = bbfs$(EXEEXT)
+bin_PROGRAMS = bbfs$(EXEEXT) cfscat$(EXEEXT)
 subdir = src
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.ac
@@ -104,6 +104,11 @@ am_bbfs_OBJECTS = bbfs.$(OBJEXT) log.$(OBJEXT) storage.$(OBJEXT) \
 bbfs_OBJECTS = $(am_bbfs_OBJECTS)
 bbfs_LDADD = $(LDADD)
 bbfs_DEPENDENCIES =
+am_cfscat_OBJECTS = cfscat.$(OBJEXT) fakelog.$(OBJEXT) \
+	storage.$(OBJEXT) io.$(OBJEXT) util.$(OBJEXT) cfs.$(OBJEXT)
+cfscat_OBJECTS = $(am_cfscat_OBJECTS)
+cfscat_LDADD = $(LDADD)
+cfscat_DEPENDENCIES =
 AM_V_P = $(am__v_P_$(V))
 am__v_P_ = $(am__v_P_$(AM_DEFAULT_VERBOSITY))
 am__v_P_0 = false
@@ -120,8 +125,8 @@ DEFAULT_INCLUDES = -I.
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = ./$(DEPDIR)/bbfs.Po ./$(DEPDIR)/cfs.Po \
-	./$(DEPDIR)/io.Po ./$(DEPDIR)/log.Po ./$(DEPDIR)/storage.Po \
-	./$(DEPDIR)/util.Po
+	./$(DEPDIR)/cfscat.Po ./$(DEPDIR)/fakelog.Po ./$(DEPDIR)/io.Po \
+	./$(DEPDIR)/log.Po ./$(DEPDIR)/storage.Po ./$(DEPDIR)/util.Po
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -135,8 +140,8 @@ AM_V_CCLD = $(am__v_CCLD_$(V))
 am__v_CCLD_ = $(am__v_CCLD_$(AM_DEFAULT_VERBOSITY))
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = $(bbfs_SOURCES)
-DIST_SOURCES = $(bbfs_SOURCES)
+SOURCES = $(bbfs_SOURCES) $(cfscat_SOURCES)
+DIST_SOURCES = $(bbfs_SOURCES) $(cfscat_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -165,13 +170,13 @@ CTAGS = ctags
 am__DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/config.h.in \
 	$(top_srcdir)/depcomp
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
-ACLOCAL = ${SHELL} /home/george/Prog/OS/lab4/cfs/missing aclocal-1.16
+ACLOCAL = ${SHELL} /home/georgetg/Prog/uthos_lab4/cfs/missing aclocal-1.16
 AMTAR = $${TAR-tar}
 AM_DEFAULT_VERBOSITY = 1
-AUTOCONF = ${SHELL} /home/george/Prog/OS/lab4/cfs/missing autoconf
-AUTOHEADER = ${SHELL} /home/george/Prog/OS/lab4/cfs/missing autoheader
-AUTOMAKE = ${SHELL} /home/george/Prog/OS/lab4/cfs/missing automake-1.16
-AWK = mawk
+AUTOCONF = ${SHELL} /home/georgetg/Prog/uthos_lab4/cfs/missing autoconf
+AUTOHEADER = ${SHELL} /home/georgetg/Prog/uthos_lab4/cfs/missing autoheader
+AUTOMAKE = ${SHELL} /home/georgetg/Prog/uthos_lab4/cfs/missing automake-1.16
+AWK = gawk
 CC = gcc
 CCDEPMODE = depmode=gcc3
 CFLAGS = -g -O2
@@ -183,11 +188,11 @@ DEPDIR = .deps
 ECHO_C = 
 ECHO_N = -n
 ECHO_T = 
-EGREP = /bin/grep -E
+EGREP = /usr/bin/grep -E
 EXEEXT = 
-FUSE_CFLAGS = -D_FILE_OFFSET_BITS=64 -I/usr/include/fuse
-FUSE_LIBS = -lfuse -pthread
-GREP = /bin/grep
+FUSE_CFLAGS = -I/usr/include/fuse -D_FILE_OFFSET_BITS=64 
+FUSE_LIBS = -lfuse -pthread 
+GREP = /usr/bin/grep
 INSTALL = /usr/bin/install -c
 INSTALL_DATA = ${INSTALL} -m 644
 INSTALL_PROGRAM = ${INSTALL}
@@ -197,8 +202,8 @@ LDFLAGS =
 LIBOBJS = 
 LIBS = 
 LTLIBOBJS = 
-MAKEINFO = ${SHELL} /home/george/Prog/OS/lab4/cfs/missing makeinfo
-MKDIR_P = /bin/mkdir -p
+MAKEINFO = ${SHELL} /home/georgetg/Prog/uthos_lab4/cfs/missing makeinfo
+MKDIR_P = /usr/bin/mkdir -p
 OBJEXT = o
 PACKAGE = fuse-tutorial
 PACKAGE_BUGREPORT = joseph@pfeifferfamily.net
@@ -212,13 +217,13 @@ PKG_CONFIG = /usr/bin/pkg-config
 PKG_CONFIG_LIBDIR = 
 PKG_CONFIG_PATH = 
 SET_MAKE = 
-SHELL = /bin/bash
+SHELL = /bin/sh
 STRIP = 
 VERSION = 2018-02-04
-abs_builddir = /home/george/Prog/OS/lab4/cfs/src
-abs_srcdir = /home/george/Prog/OS/lab4/cfs/src
-abs_top_builddir = /home/george/Prog/OS/lab4/cfs
-abs_top_srcdir = /home/george/Prog/OS/lab4/cfs
+abs_builddir = /home/georgetg/Prog/uthos_lab4/cfs/src
+abs_srcdir = /home/georgetg/Prog/uthos_lab4/cfs/src
+abs_top_builddir = /home/georgetg/Prog/uthos_lab4/cfs
+abs_top_srcdir = /home/georgetg/Prog/uthos_lab4/cfs
 ac_ct_CC = gcc
 am__include = include
 am__leading_dot = .
@@ -237,7 +242,7 @@ host_alias =
 htmldir = ${docdir}
 includedir = ${prefix}/include
 infodir = ${datarootdir}/info
-install_sh = ${SHELL} /home/george/Prog/OS/lab4/cfs/install-sh
+install_sh = ${SHELL} /home/georgetg/Prog/uthos_lab4/cfs/install-sh
 libdir = ${exec_prefix}/lib
 libexecdir = ${exec_prefix}/libexec
 localedir = ${datarootdir}/locale
@@ -249,7 +254,6 @@ pdfdir = ${docdir}
 prefix = /usr/local
 program_transform_name = s,x,x,
 psdir = ${docdir}
-runstatedir = ${localstatedir}/run
 sbindir = ${exec_prefix}/sbin
 sharedstatedir = ${prefix}/com
 srcdir = .
@@ -259,8 +263,9 @@ top_build_prefix = ../
 top_builddir = ..
 top_srcdir = ..
 bbfs_SOURCES = bbfs.c log.c log.h  params.h storage.c storage.h io.c io.h util.c util.h cfs.h cfs.c
-AM_CFLAGS = -D_FILE_OFFSET_BITS=64 -I/usr/include/fuse
-LDADD = -lfuse -pthread -lcrypto
+cfscat_SOURCES = cfscat.c fakelog.c log.h  storage.c storage.h io.c io.h util.c util.h cfs.h cfs.c
+AM_CFLAGS = -I/usr/include/fuse -D_FILE_OFFSET_BITS=64 
+LDADD = -lfuse -pthread  -lcrypto
 all: config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-am
 
@@ -357,6 +362,10 @@ bbfs$(EXEEXT): $(bbfs_OBJECTS) $(bbfs_DEPENDENCIES) $(EXTRA_bbfs_DEPENDENCIES)
 	@rm -f bbfs$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(bbfs_OBJECTS) $(bbfs_LDADD) $(LIBS)
 
+cfscat$(EXEEXT): $(cfscat_OBJECTS) $(cfscat_DEPENDENCIES) $(EXTRA_cfscat_DEPENDENCIES) 
+	@rm -f cfscat$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(cfscat_OBJECTS) $(cfscat_LDADD) $(LIBS)
+
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
 
@@ -365,6 +374,8 @@ distclean-compile:
 
 include ./$(DEPDIR)/bbfs.Po # am--include-marker
 include ./$(DEPDIR)/cfs.Po # am--include-marker
+include ./$(DEPDIR)/cfscat.Po # am--include-marker
+include ./$(DEPDIR)/fakelog.Po # am--include-marker
 include ./$(DEPDIR)/io.Po # am--include-marker
 include ./$(DEPDIR)/log.Po # am--include-marker
 include ./$(DEPDIR)/storage.Po # am--include-marker
@@ -519,6 +530,8 @@ clean-am: clean-binPROGRAMS clean-generic mostlyclean-am
 distclean: distclean-am
 		-rm -f ./$(DEPDIR)/bbfs.Po
 	-rm -f ./$(DEPDIR)/cfs.Po
+	-rm -f ./$(DEPDIR)/cfscat.Po
+	-rm -f ./$(DEPDIR)/fakelog.Po
 	-rm -f ./$(DEPDIR)/io.Po
 	-rm -f ./$(DEPDIR)/log.Po
 	-rm -f ./$(DEPDIR)/storage.Po
@@ -570,6 +583,8 @@ installcheck-am:
 maintainer-clean: maintainer-clean-am
 		-rm -f ./$(DEPDIR)/bbfs.Po
 	-rm -f ./$(DEPDIR)/cfs.Po
+	-rm -f ./$(DEPDIR)/cfscat.Po
+	-rm -f ./$(DEPDIR)/fakelog.Po
 	-rm -f ./$(DEPDIR)/io.Po
 	-rm -f ./$(DEPDIR)/log.Po
 	-rm -f ./$(DEPDIR)/storage.Po

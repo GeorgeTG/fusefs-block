@@ -99,7 +99,7 @@ int load_block(const cfs_blk_store_t* storage, const unsigned char* hash, unsign
             return -1;
         }
 
-        ret = s_read(fd, data, 4096);
+        ret = s_read(fd, data, BLOCK_SIZE);
         if (ret <= 0) {
             close(fd);
             return -1;

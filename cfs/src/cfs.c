@@ -75,6 +75,7 @@ int cfs_register_file(cfs_state_t* state, const char* path, const int fd) {
         if (state->fds[i] == -1) {
             state->fds[i] = fd;
             state->files[i].offset = 0;
+            state->files[i].fd = fd;
             strcpy(state->files[i].path, path);
 
             log_msg("\n CFS: registered file[FD: %d]: %s at index: %d \n", fd, path, i);
@@ -128,6 +129,7 @@ cfs_file_t* cfs_get_file(cfs_state_t* state, int fd) {
     int i;
     for (i=0; i<state->fds_cap; i++) {
         if (state->fds[i] == fd) {
+            log_msg("\n CFS: Found file %d at [%d] -> *%p\n", fd, i, &state->files[i]);
             return &state->files[i];
         }
     }
@@ -141,6 +143,10 @@ int cfs_file_find_index(const cfs_state_t* state, cfs_file_t* file, const off_t 
     ssize_t block_size;
     ssize_t bytes_read;
     off_t index_buff;
+
+    if (file->total_blocks == 0) {
+        return 0;
+    }
 
     // start from the beginning
     s_lseek(file->fd, BLOCK_START, SEEK_SET);
@@ -169,7 +175,7 @@ int cfs_file_register_block(const cfs_state_t* state, cfs_file_t* file, const cf
     calculate_hash(block->data, block->size, hash);
     // try to store the block, 
     ret = store_block(state->storage, block->data, block->size, hash);
-    if (ret != 0) {
+    if (ret < 0) {
         log_error("CFS: Cant store block!");
         return ret;
     }
@@ -187,14 +193,18 @@ int cfs_file_register_block(const cfs_state_t* state, cfs_file_t* file, const cf
         s_write(file->fd, (void*)hash, HASH_LENGTH);
     } else {
         // append pair to the end of the file
+        log_msg("CFS: registering new block [%d] for file %s", block->index, file->path);
         s_lseek(file->fd, 0, SEEK_END);
         s_write(file->fd, (void*)&(block->index), sizeof(block->index));
         s_write(file->fd, (void*)hash, HASH_LENGTH);
+        file->total_blocks ++;
     }
+
     // update file size
     file->size = file->size - old_size + block->size;
     s_lseek(file->fd, SIZE_START, SEEK_SET);
     s_write(file->fd, (void*)&(file->size), sizeof(file->size));
+    s_write(file->fd, (void*)&(file->total_blocks), sizeof(file->total_blocks));
 
     return 0;
 }
