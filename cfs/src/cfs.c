@@ -55,6 +55,27 @@ int cfs_destroy(cfs_state_t* state) {
 }
 
 
+int cfs_file_stat(cfs_state_t* state, const char* path, cfs_file_t* stat_buf) {
+    int fd, ret=0;
+    char magic_buff[sizeof(MAGIC) + 1];
+
+    fd = open(path, O_RDONLY);
+    if (fd < 0) {
+        return fd;
+    }
+
+    s_read(fd, (void*)magic_buff, sizeof(MAGIC));
+    magic_buff[sizeof(MAGIC)] = '\0';
+    if (strcmp(magic_buff, MAGIC) != 0 ) {
+        log_msg("\nCFS: file: %s is not a CFS file!\n", path);
+        return -1;
+    }
+    ret |= s_read(fd, (void*)&(stat_buf->size), sizeof(off_t));
+    ret |= s_read(fd, (void*)&(stat_buf->total_blocks), sizeof(off_t));
+
+    return ret != 0;
+}
+
 int cfs_register_file(cfs_state_t* state, const char* path, const int fd) {
     int i = 0, ret;
     off_t buff;
