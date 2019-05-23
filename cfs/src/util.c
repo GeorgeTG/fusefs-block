@@ -31,12 +31,12 @@ void combine(char *destination, const char *path1, const char *path2) {
 }
 
 
-int calculate_hash(const char* data, const size_t length, unsigned char* buff) {
+int calculate_hash(const char *__restrict__ data, const size_t length, unsigned char *__restrict__ buff) {
     SHA1(data, length, buff);
     return 1;
 }
 
-int hexify(const unsigned char *in, const size_t in_size, char *out, const size_t out_size) {
+int hexify(const unsigned char *__restrict__ in, const size_t in_size, char *__restrict__ out, const size_t out_size) {
     /* convert a byte buffer to a hex string */
     if (in_size == 0 || out_size == 0) return 0;
 

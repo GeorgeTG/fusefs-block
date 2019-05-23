@@ -28,6 +28,9 @@ off_t block_index - (20) hash  X total_blocks times
 #include "log.h"
 
 
+/*
+    Initialise the CFS file system
+*/
 int cfs_init(cfs_state_t *state, const char* rootdir) {
     int i;
     /* get the maximum number of file descriptors the systems is configured to have */
@@ -50,12 +53,24 @@ int cfs_init(cfs_state_t *state, const char* rootdir) {
     return 0;
 }
 
-int cfs_destroy(cfs_state_t* state) {
+
+/*
+    Deinitialise the CFS file system.
+*/
+int cfs_destroy(cfs_state_t* state)
+{
+    free(state->files);
+    free(state->fds);
     destroy_storage(state->storage);
 }
 
 
-int cfs_file_stat(cfs_state_t* state, const char* path, cfs_file_t* stat_buf) {
+/*
+    Stat a CFS file.
+    Path must contain root.
+*/
+int cfs_file_stat(cfs_state_t* state, const char* path, cfs_file_t* stat_buf)
+{
     int fd, ret=0;
     char magic_buff[sizeof(MAGIC) + 1];
     ssize_t total;
@@ -82,6 +97,12 @@ int cfs_file_stat(cfs_state_t* state, const char* path, cfs_file_t* stat_buf) {
     } 
 }
 
+
+/*
+    Register a file to be manipulated with CFS.
+    Equivalent to open without O_CREAT.
+    Path must contain root
+*/
 int cfs_register_file(cfs_state_t* state, const char* path, const int fd) {
     int i = 0, ret;
     off_t buff;
@@ -128,8 +149,31 @@ int cfs_register_file(cfs_state_t* state, const char* path, const int fd) {
     return -1; 
 }
 
-int cfs_create_file(cfs_state_t* state, const char* path, mode_t mode) {
-    /* note path contains root */
+
+/*
+    Release a CFS file
+*/
+int cfs_release_file(cfs_state_t* state, const int fd) {
+    int i;
+    for (i=0; i<state->fds_cap; i++) {
+        if (state->fds[i] == fd) {
+            log_msg("\n CFS: Released file %d at [%d] -> *%p\n", fd, i, &state->files[i]);
+            state->fds[i] = -1;
+            return 0;
+        }
+    }
+
+    return -1;
+}
+
+
+/*
+    Create a file and initialise its header.
+    Equivalent to open with O_CREAT.
+    Path must contain root.
+*/
+int cfs_create_file(cfs_state_t* state, const char* path, mode_t mode)
+{
     int fd;
     off_t buff = 0;
 
@@ -149,10 +193,12 @@ int cfs_create_file(cfs_state_t* state, const char* path, mode_t mode) {
     return fd;
 }
 
+
 /*
-    Get a file state by file descriptor
+    Get a CFS file by the underlying file descriptor
 */
-cfs_file_t* cfs_get_file(cfs_state_t* state, int fd) {
+cfs_file_t* cfs_get_file(cfs_state_t* state, int fd)
+{
     int i;
     for (i=0; i<state->fds_cap; i++) {
         if (state->fds[i] == fd) {
@@ -164,7 +210,13 @@ cfs_file_t* cfs_get_file(cfs_state_t* state, int fd) {
     return NULL;
 }
 
-int cfs_file_find_index(const cfs_state_t* state, cfs_file_t* file, const off_t index) {
+
+/*
+    Helper function to find a block index in file, offset is set exactly after index
+    and before the block hash
+*/
+int cfs_file_find_index(const cfs_state_t* state, cfs_file_t* file, const off_t index)
+{
     int ret;
     unsigned char hash [HASH_LENGTH];
     ssize_t block_size;
@@ -194,7 +246,13 @@ int cfs_file_find_index(const cfs_state_t* state, cfs_file_t* file, const off_t 
     return 0;
 }
 
-int cfs_file_register_block(const cfs_state_t* state, cfs_file_t* file, const cfs_block_t* block) {
+
+/*
+    Register a *block* to *file*.
+    Block is saved in block storage, if it doesn't already exist. 
+*/
+int cfs_file_register_block(const cfs_state_t* state, cfs_file_t* file, const cfs_block_t* block)
+{
     int ret;
     unsigned char hash [HASH_LENGTH];
     ssize_t old_size=0, bytes_read;
@@ -236,7 +294,13 @@ int cfs_file_register_block(const cfs_state_t* state, cfs_file_t* file, const cf
     return 0;
 }
 
-int cfs_file_read_block(const cfs_state_t* state, cfs_file_t* file, const off_t index, cfs_block_t* buff) {
+
+/*
+    Read a block from file
+    Index is the block index, not to be confused with file offset
+*/
+int cfs_file_read_block(const cfs_state_t* state, cfs_file_t* file, const off_t index, cfs_block_t* buff)
+{
     int ret;
     unsigned char hash [HASH_LENGTH];
     ssize_t block_size;
@@ -262,9 +326,3 @@ int cfs_file_read_block(const cfs_state_t* state, cfs_file_t* file, const off_t 
 
     return 1;
 }
-
-
-int delete_file(int fd) {
-
-}
-

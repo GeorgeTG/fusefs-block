@@ -536,10 +536,13 @@ int bb_release(const char *path, struct fuse_file_info *fi)
     log_msg("\nbb_release(path=\"%s\", fi=0x%08x)\n",
       path, fi);
     log_fi(fi);
-
+    int ret;
     // We need to close the file.  Had we allocated any resources
     // (buffers etc) we'd need to free them here as well.
-    return log_syscall("close", close(fi->fh), 0);
+
+    ret = cfs_release_file(CFS_STATE, fi->fh);
+    ret |= log_syscall("close", close(fi->fh), 0);
+    return ret;
 }
 
 /** Synchronize file contents

@@ -48,6 +48,7 @@ cfs_file_t* cfs_get_file(cfs_state_t* state, int fd);
 int cfs_file_stat(cfs_state_t* state, const char* path, cfs_file_t* stat_buf);
 int cfs_create_file(cfs_state_t* state, const char* path, mode_t mode);
 int cfs_register_file(cfs_state_t* state, const char* path, const int fd);
+int cfs_release_file(cfs_state_t* state, const int fd);
 int cfs_file_read_block(const cfs_state_t* state, cfs_file_t* file, const off_t index, cfs_block_t* buff);
 int cfs_file_register_block(const cfs_state_t* state, cfs_file_t* file, const cfs_block_t* block);
 
