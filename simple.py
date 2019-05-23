@@ -7,6 +7,7 @@ import string
 from random import randint
 
 BLOCK_SIZE = 4096
+BLOCKS = 150
 
 def random_str(stringLength=10):
     """Generate a random string of fixed length """
@@ -24,7 +25,7 @@ def main():
     print("First offset {}".format(first_offset))
     print("Second offset {}".format(second_offset))
 
-    stuff = random_str(BLOCK_SIZE-first_offset + BLOCK_SIZE + second_offset)
+    stuff = random_str(BLOCK_SIZE-first_offset + BLOCK_SIZE * BLOCKS + second_offset)
     print("Buffer len: {}".format(len(stuff)))
 
     with open(test_file, 'w', buffering=20000) as f:
@@ -44,6 +45,9 @@ def main():
         print ("NICE! :)")
     else:
         print ("MEH! :(")
+        for i in range(len(stuff)):
+            if stuff[i] != maybe_stuff[i]:
+                print("At index {} wrote: {} read: {}".format(i, stuff[i], maybe_stuff[i]))
 
 
     

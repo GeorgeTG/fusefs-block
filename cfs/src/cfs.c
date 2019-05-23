@@ -98,6 +98,15 @@ int cfs_file_stat(cfs_state_t* state, const char* path, cfs_file_t* stat_buf)
 }
 
 
+int cfs_print_state(cfs_state_t* state) {
+    int i = 0;
+    log_msg("\nCFS STATE:\n");
+    for (i=0; i<state->fds_cap; i++) {
+        log_msg("[%d] -> %s\n", state->fds[i], state->files[i].path);
+    }
+    return -1;
+}
+
 /*
     Register a file to be manipulated with CFS.
     Equivalent to open without O_CREAT.
@@ -109,7 +118,7 @@ int cfs_register_file(cfs_state_t* state, const char* path, const int fd) {
 
     if (state->n_fds >= state->fds_cap /2) {
         /* make the state map bigger*/
-        i = state->fds_cap; /* store old upper bound, to init the new memory */
+        i = state->fds_cap - 1; /* store old upper bound, to init the new memory */
         state->fds_cap = state->fds_cap * 2;
         state->files = realloc(state->files, sizeof(cfs_file_t) * state->fds_cap);
         state->fds = realloc(state->fds, sizeof(int) * state->fds_cap);
@@ -127,6 +136,7 @@ int cfs_register_file(cfs_state_t* state, const char* path, const int fd) {
             strcpy(state->files[i].path, path);
 
             log_msg("\n CFS: registered file[FD: %d]: %s at index: %d \n", fd, path, i);
+            state->n_fds++;
 
             /* read size and blocks */
             ret = s_lseek(fd, sizeof(MAGIC), SEEK_SET);
@@ -159,6 +169,7 @@ int cfs_release_file(cfs_state_t* state, const int fd) {
         if (state->fds[i] == fd) {
             log_msg("\n CFS: Released file %d at [%d] -> *%p\n", fd, i, &state->files[i]);
             state->fds[i] = -1;
+            state->n_fds--;
             return 0;
         }
     }
@@ -324,5 +335,6 @@ int cfs_file_read_block(const cfs_state_t* state, cfs_file_t* file, const off_t 
         return ret;
     }
 
+    buff->index = index;
     return 1;
 }

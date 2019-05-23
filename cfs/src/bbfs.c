@@ -346,10 +346,10 @@ int bb_read(const char *path, char *buf, size_t size, off_t offset, struct fuse_
     cfs_file_t* file;
     cfs_block_t blk_buf;
     off_t current_offset = offset;
-    int buffer_index=0;
+    off_t buffer_index=0;
 
-    int rem;
-    int left, right; // helper indexes to copy from read block
+    off_t rem;
+    off_t left, right; // helper indexes to copy from read block
 
    
     log_msg("\nbb_read(path=\"%s\", buf=0x%08x, size=%d, offset=%lld, fi=0x%08x)\n",
@@ -359,7 +359,7 @@ int bb_read(const char *path, char *buf, size_t size, off_t offset, struct fuse_
 
     file = cfs_get_file(CFS_STATE, fi->fh);
     if (file == NULL) {
-        log_msg("\nCFS: Cannot find file %s to write\n", path);
+        log_msg("\nCFS: Cannot find file %s to read\n", path);
         return -1;
     }
 
@@ -414,10 +414,10 @@ int bb_write(const char *path, const char *buf, size_t size, off_t offset,
     cfs_file_t* file;
     cfs_block_t blk_buf;
     off_t current_offset = offset;
-    int buffer_index=0;
+    off_t buffer_index=0;
 
-    int rem;
-    int left, right; // helper indexes to copy from read block
+    off_t rem;
+    off_t left, right; // helper indexes to copy from read block
 
     log_msg("\nbb_write(path=\"%s\", buf=0x%08x, size=%d, offset=%lld, fi=0x%08x)\n",
         path, buf, size, offset, fi

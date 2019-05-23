@@ -132,15 +132,10 @@ int init_storage(cfs_blk_store_t* storage, const char* root) {
     strcpy(storage->root_path, root);
     combine(storage->blocks_path, root, BLOCKS_DIRECTORY);
 
-    printf("\nBlock directory is: %s\n", storage->blocks_path);
-
     /* check if the blocks directory exists, otherwise create it */
     struct stat st = {0};
     if (stat(storage->blocks_path, &st) == -1) {
         mkdir(storage->blocks_path, 0700);
-        printf("\n Creating blocks directory \n");
-    } else {
-        printf("\n Found blocks directory \n");
     }
 
     return 1;
