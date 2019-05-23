@@ -17,9 +17,8 @@ off_t s_lseek(int fd, off_t offset, int whence){
                 continue;
             }
             perror("lseek");
-        } else {
-            return code;
         }
+        return code;
     } while (1);
 
     return code;
