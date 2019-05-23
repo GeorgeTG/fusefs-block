@@ -394,7 +394,8 @@ int bb_read(const char *path, char *buf, size_t size, off_t offset, struct fuse_
         // advance input buffer
         buffer_index += BLOCK_SIZE - rem;
     }
-    return size;
+
+    return current_offset - offset;
     //return log_syscall("pread", pread(fi->fh, buf, size, offset), 0);
 }
 
