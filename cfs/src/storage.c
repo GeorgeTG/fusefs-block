@@ -104,7 +104,8 @@ int load_block(const cfs_blk_store_t* storage, const unsigned char* hash, unsign
             close(fd);
             return -1;
         }
-        
+
+        log_msg("\n CFS: Storage: Loaded block %s, size: %ld \n", buff, ret); 
         *size = (size_t)ret;
         close(fd);
     } else {

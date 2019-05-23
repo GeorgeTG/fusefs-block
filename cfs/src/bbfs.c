@@ -371,17 +371,24 @@ int bb_read(const char *path, char *buf, size_t size, off_t offset, struct fuse_
         rem = current_offset % BLOCK_SIZE;
 
         // read curent block 
-        cfs_file_read_block(CFS_STATE, file, current_offset / BLOCK_SIZE, &blk_buf);
-        // Set up index pointers
-        left = rem;
-        right = min(blk_buf.size - left, 0); // be aware of holes i.e incomplete blocks
-    
-        memcpy(buf + buffer_index, blk_buf.data + left, max(right-left, 0));
-
-        log_msg("\n CFS: read block: left %d, right %d, size: %zu, crnt_off: %d, blk_idx: %d, buff_idx: %d\n",
-            left, right, blk_buf.size, current_offset, blk_buf.index, buffer_index);        
+        if (cfs_file_read_block(CFS_STATE, file, current_offset / BLOCK_SIZE, &blk_buf)) {
+            // Set up index pointers
+            left = rem;
+            right = max(blk_buf.size - left, 0); // be aware of holes i.e incomplete blocks
         
-        // Advance current offset to next block, again beware of holes
+            memcpy(buf + buffer_index, blk_buf.data + left, max(right-left, 0));
+
+            log_msg("\n CFS: read block: left %d, right %d, size: %zu, crnt_off: %d, blk_idx: %d, buff_idx: %d\n",
+                left, right, blk_buf.size, current_offset, blk_buf.index, buffer_index);        
+        } else {
+            // No block at this index
+            left = rem;
+            right = min(BLOCK_SIZE, left + offset + size - current_offset);
+            memset(buf + buffer_index, '\0', right-left);
+            log_msg("\n CFS: fillbuffer: left %d, right %d, size: %zu, crnt_off: %d, blk_idx: %d, buff_idx: %d\n",
+                left, right, right-left, current_offset, current_offset/ BLOCK_SIZE, buffer_index);        
+        }
+       // Advance current offset to next block, again beware of holes
         current_offset += BLOCK_SIZE - rem;
 
         // advance input buffer
@@ -438,7 +445,7 @@ int bb_write(const char *path, const char *buf, size_t size, off_t offset,
         memcpy(blk_buf.data + left, buf + buffer_index, right-left);
 
         // Set up and write block
-        blk_buf.size = right-left;
+        blk_buf.size = right; // Careful here, dont remove leading hole
         blk_buf.index = current_offset / BLOCK_SIZE;
         cfs_file_register_block(CFS_STATE, file, &blk_buf);
         log_msg("\n CFS: write block: left %d, right %d, size: %zu, crnt_off: %d, blk_idx: %d, buff_idx: %d\n",

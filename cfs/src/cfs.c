@@ -67,7 +67,6 @@ int cfs_file_stat(cfs_state_t* state, const char* path, cfs_file_t* stat_buf) {
 
     magic_buff[sizeof(MAGIC)] = '\0';
     total = s_read(fd, (void*)magic_buff, sizeof(MAGIC));
-    log_msg("\n |%s| |%s| \n", MAGIC, magic_buff);
     if (total < sizeof(MAGIC) || (strcmp(magic_buff, MAGIC) != 0 )) {
         log_msg("\nCFS: file: %s is not a CFS file!\n", path);
         return -1;
