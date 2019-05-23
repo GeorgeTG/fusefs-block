@@ -34,7 +34,6 @@ ssize_t s_read(int fd, void *buf, size_t count){
             if (errno == EINTR) {
                 continue;
             } else {
-                perror("read");
                 return -1;
             }
         } else {
@@ -56,7 +55,6 @@ ssize_t s_write(int fd, void *buf, size_t count){
             if (errno == EINTR) {
                 continue;
             } else {
-                perror("read");
                 return -1;
             }
         } else{

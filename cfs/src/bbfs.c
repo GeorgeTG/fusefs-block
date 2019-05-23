@@ -73,7 +73,7 @@ static void bb_fullpath(char fpath[PATH_MAX], const char *path)
  */
 int bb_getattr(const char *path, struct stat *statbuf)
 {
-    int retstat;
+    int retstat, retstat2;
     char fpath[PATH_MAX];
     cfs_file_t file;
 
@@ -81,11 +81,12 @@ int bb_getattr(const char *path, struct stat *statbuf)
       path, statbuf);
     bb_fullpath(fpath, path);
 
-    retstat |= log_syscall("lstat", lstat(fpath, statbuf), 0);
-    retstat = cfs_file_stat(CFS_STATE, fpath, &file);
-    statbuf->st_size = file.size;
-    statbuf->st_blksize = BLOCK_SIZE;
-    statbuf->st_blocks = file.total_blocks;
+    retstat = log_syscall("lstat", lstat(fpath, statbuf), 0);
+    if (cfs_file_stat(CFS_STATE, fpath, &file)) {
+        statbuf->st_size = file.size;
+        statbuf->st_blksize = BLOCK_SIZE;
+        statbuf->st_blocks = file.total_blocks;
+    }
 
     log_stat(statbuf);
     
@@ -432,7 +433,7 @@ int bb_write(const char *path, const char *buf, size_t size, off_t offset,
         }
         // Set up index pointers
         left = rem;
-        right = min(BLOCK_SIZE - rem, offset + size - current_offset);
+        right = min(BLOCK_SIZE, left + offset + size - current_offset);
         // copy data to write in block buffer
         memcpy(blk_buf.data + left, buf + buffer_index, right-left);
 
