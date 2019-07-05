@@ -10,6 +10,7 @@ typedef struct {
 } cfs_blk_store_t;
 
 
+#define BLOCKS_DIRECTORY "/.BLOCKS"
 #define BLOCK_SIZE 4096
 
 int init_storage(cfs_blk_store_t* storage, const char* root);

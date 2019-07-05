@@ -9,19 +9,19 @@ int file_exists(const char* path) {
 }
 
 off_t s_lseek(int fd, off_t offset, int whence){
-    int code;
+    int ret;
     do {
-        code = lseek(fd, offset, whence);
-        if( code == -1 ){
+        ret = lseek(fd, offset, whence);
+        if( ret == -1 ){
             if (errno == EINTR) {
                 continue;
             }
             perror("lseek");
         }
-        return code;
+        return ret;
     } while (1);
 
-    return code;
+    return ret;
 }
 
 ssize_t s_read(int fd, void *buf, size_t count){

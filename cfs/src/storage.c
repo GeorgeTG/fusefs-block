@@ -15,7 +15,6 @@
 #include "util.h"
 #include "log.h"
 
-#define BLOCKS_DIRECTORY "/.BLOCKS"
 
 ssize_t block_get_size( const cfs_blk_store_t* storage, const unsigned char* hash) {
     int fd;
