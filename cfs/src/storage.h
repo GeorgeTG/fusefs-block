@@ -16,6 +16,8 @@ typedef struct {
 int init_storage(cfs_blk_store_t* storage, const char* root);
 void destroy_storage(cfs_blk_store_t* storage);
 int store_block(const cfs_blk_store_t* storage, const unsigned char* data, const size_t size, unsigned char* hash);
-int load_block(const cfs_blk_store_t* storage, const unsigned char* hash, unsigned char* data, size_t* size);
+int load_block(const cfs_blk_store_t* storage, const unsigned char* hash, unsigned char* data, size_t* size, size_t* refs);
 ssize_t block_get_size( const cfs_blk_store_t* storage, const unsigned char* hash);
+int block_inc_ref( const cfs_blk_store_t* storage, const unsigned char* hash);
+int block_dec_ref( const cfs_blk_store_t* storage, const unsigned char* hash);
 #endif
